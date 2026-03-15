@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tokenify</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      color: #111;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    main {
+      flex: 1;
+      padding: 48px 40px 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    header { margin-bottom: 36px; }
+    header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+    header p { font-size: 14px; color: #666; margin-top: 4px; }
+
+    .layout {
+      display: flex;
+      align-items: start;
+    }
+
+    .panel-right-wrapper {
+      position: sticky;
+      top: 24px;
+      flex: 1;
+      min-width: 280px;
+    }
+
+    /* LEFT PANEL */
+    .panel-left {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      width: calc(50% - 12px);
+      flex-shrink: 0;
+      min-width: 280px;
+      height: 600px;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 24px;
+    }
+
+    .left-header {
+      padding: 20px 24px 0;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 20;
+    }
+
+    .left-header-row {
+      display: flex;
+      align-items: flex-end;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .left-tabs {
+      display: flex;
+      flex: 1;
+    }
+
+    .left-tab-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 10px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .token-pane {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px;
+    }
+
+    /* Resize handle */
+    .resize-handle {
+      flex-shrink: 0;
+      width: 24px;
+      align-self: stretch;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      cursor: col-resize;
+      padding-top: 20px;
+      position: relative;
+      z-index: 10;
+    }
+    .resize-handle::after {
+      content: '';
+      width: 3px;
+      height: 32px;
+      border-radius: 99px;
+      background: transparent;
+      transition: background 0.15s;
+    }
+    .resize-handle:hover::after,
+    .resize-handle.dragging::after {
+      background: #ccc;
+    }
+
+    .section {
+      padding: 20px 24px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .section:last-child { border-bottom: none; }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 10;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    .section-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-add {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #2563eb;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    .btn-add:hover { color: #1d4ed8; }
+
+    .btn-tool {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #555;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      white-space: nowrap;
+    }
+    .btn-tool:hover { color: #111; }
+
+    .btn-cancel {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #999;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    .btn-cancel:hover { color: #555; }
+
+    /* Tooltip */
+    .tip-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tip-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1.5px solid #bbb;
+      color: #bbb;
+      font-size: 9px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+      flex-shrink: 0;
+      line-height: 1;
+      font-style: normal;
+    }
+    .tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a1a;
+      color: #fff;
+      border-radius: 10px;
+      padding: 12px 14px;
+      width: 260px;
+      z-index: 200;
+      pointer-events: none;
+    }
+    .tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #1a1a1a;
+    }
+    .tooltip-title {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 5px;
+      color: #fff;
+    }
+    .tooltip-desc {
+      font-size: 11.5px;
+      color: #bbb;
+      line-height: 1.55;
+    }
+    .tip-wrap:hover .tooltip { display: block; }
+
+    .tip-wrap.tip-below .tooltip {
+      bottom: auto;
+      top: calc(100% + 10px);
+    }
+    .tip-wrap.tip-below .tooltip::after {
+      top: auto;
+      bottom: 100%;
+      border-top-color: transparent;
+      border-bottom-color: #1a1a1a;
+    }
+
+    /* TOKEN ROWS */
+    .token-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid #f5f5f5;
+      transition: opacity 0.2s;
+    }
+    .token-row:last-child { border-bottom: none; }
+    .token-row.dimmed {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    /* Color rows */
+    .color-swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 5px;
+      border: 1px solid rgba(0,0,0,0.1);
+      flex-shrink: 0;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .color-swatch input[type="color"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      border: none;
+      padding: 0;
+    }
+
+    /* Typography rows */
+    .type-preview {
+      width: 26px;
+      height: 26px;
+      border-radius: 5px;
+      border: 1px solid #e5e5e5;
+      background: #f8f8f8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      flex-shrink: 0;
+    }
+
+    /* Spacing rows */
+    .space-preview {
+      width: 26px;
+      height: 26px;
+      border-radius: 5px;
+      border: 1px solid #e5e5e5;
+      background: #f8f8f8;
+      flex-shrink: 0;
+    }
+
+    .token-name {
+      flex: 1;
+      min-width: 0;
+      font-size: 13.5px;
+      color: #222;
+      background: none;
+      border: none;
+      outline: none;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .token-name:focus { background: #f5f5f5; }
+
+    .token-value {
+      font-size: 13.5px;
+      color: #444;
+      background: none;
+      border: none;
+      outline: none;
+      padding: 2px 4px;
+      border-radius: 4px;
+      min-width: 70px;
+    }
+    .token-value:focus { background: #f5f5f5; }
+    .token-value.font-family { min-width: 70px; }
+    .token-value.font-size   { min-width: 50px; }
+    .token-value.font-weight { min-width: 45px; }
+
+    .divider { width: 1px; height: 14px; background: #e5e5e5; }
+
+    .btn-remove {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #bbb;
+      font-size: 15px;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .btn-remove:hover { color: #888; background: #f0f0f0; }
+
+    /* RIGHT PANEL */
+    .panel-right {
+      background: #f0f0f0;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+    }
+
+    .results-header { padding: 20px 24px 0; }
+    .results-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 14px;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab-btn {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #999;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    .tab-btn.active { color: #111; border-bottom-color: #111; }
+    .tab-btn:hover:not(.active) { color: #555; }
+
+    .code-area {
+      padding: 20px 24px;
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.75;
+      color: #888;
+      flex: 1;
+      white-space: pre-wrap;
+      overflow-y: auto;
+      overflow-x: auto;
+    }
+
+    .results-footer {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid #ddd;
+    }
+    .btn-action {
+      background: #111;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 18px 20px;
+      transition: background 0.15s;
+    }
+    .btn-action:hover { background: #333; }
+    .btn-action + .btn-action { border-left: 1px solid #333; }
+
+    footer { padding: 20px 40px; font-size: 12px; color: #aaa; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: #111;
+      color: #fff;
+      font-size: 13px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 9999;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<main>
+  <header>
+    <h1>Tokenify</h1>
+    <p>Generate production ready design token for CSS, JSON and Figma</p>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT -->
+    <div class="panel-left" id="panel-left">
+      <div class="left-header">
+        <div class="results-title">Variables</div>
+        <div class="left-header-row">
+          <div class="left-tabs" id="left-tabs">
+            <button class="tab-btn active" onclick="setLeftTab('colors')">Colors</button>
+            <button class="tab-btn" onclick="setLeftTab('typography')">Typography</button>
+            <button class="tab-btn" onclick="setLeftTab('spacing')">Spacing</button>
+          </div>
+          <div class="left-tab-actions" id="left-tab-actions"></div>
+        </div>
+      </div>
+      <div class="token-pane">
+        <div id="colors-list"></div>
+        <div id="typography-list"></div>
+        <div id="spacing-list"></div>
+      </div>
+    </div>
+
+    <div class="resize-handle" id="resize-handle"></div>
+
+    <!-- RIGHT -->
+    <div class="panel-right-wrapper" id="panel-right-wrapper"><div class="panel-right">
+      <div class="results-header">
+        <div class="results-title">Results</div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="setTab('css')">CSS VAR</button>
+          <button class="tab-btn" onclick="setTab('json')">JSON</button>
+          <button class="tab-btn" onclick="setTab('figma')">FIGMA TOKENS</button>
+        </div>
+      </div>
+      <div class="code-area" id="code-output"></div>
+      <div class="results-footer">
+        <button class="btn-action" onclick="copyToClipboard()">Copy to Clipboard</button>
+        <button class="btn-action" onclick="downloadFile()">Download as File</button>
+      </div>
+    </div></div>
+
+  </div>
+</main>
+
+<footer>© 2026 by Asyrof</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Color utilities ────────────────────────────────────
+  function hexToHsl(hex) {
+    let r = parseInt(hex.slice(1,3),16)/255;
+    let g = parseInt(hex.slice(3,5),16)/255;
+    let b = parseInt(hex.slice(5,7),16)/255;
+    const max = Math.max(r,g,b), min = Math.min(r,g,b);
+    let h, s, l = (max+min)/2;
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+      switch(max) {
+        case r: h = ((g-b)/d + (g<b?6:0))/6; break;
+        case g: h = ((b-r)/d + 2)/6; break;
+        case b: h = ((r-g)/d + 4)/6; break;
+      }
+    }
+    return [Math.round(h*360), Math.round(s*100), Math.round(l*100)];
+  }
+
+  function hslToHex(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    s = Math.max(0, Math.min(100, s));
+    l = Math.max(0, Math.min(100, l));
+    s /= 100; l /= 100;
+    const a = s * Math.min(l, 1-l);
+    const f = n => {
+      const k = (n + h/30) % 12;
+      const c = l - a * Math.max(Math.min(k-3, 9-k, 1), -1);
+      return Math.round(255*c).toString(16).padStart(2,'0').toUpperCase();
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  }
+
+  // ── Derive full MD3 palette from primary + secondary + tertiary hex ──
+  function deriveColors(primaryHex, secondaryHex, tertiaryHex) {
+    const [ph, ps, pl] = hexToHsl(primaryHex);
+    const [sh, ss, sl] = hexToHsl(secondaryHex);
+    // if tertiary not supplied, fall back to hue-shifted primary
+    const [th, ts, tl] = tertiaryHex ? hexToHsl(tertiaryHex) : [(ph + 60) % 360, ps, pl];
+
+    const d = (h, s, l) => hslToHex(h, s, l);
+    const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
+
+    const ps2 = clamp(ps, 30, 90);
+    const ss2 = clamp(ss, 20, 80);
+    const ts2 = clamp(ts, 20, 80);
+
+    return [
+      // Primary
+      { name: 'sys.color.primary',                    value: primaryHex },
+      { name: 'sys.color.on-primary',                 value: pl > 55 ? d(ph, ps2, 12) : '#FFFFFF' },
+      { name: 'sys.color.primary-container',          value: d(ph, clamp(ps2*0.4, 15, 55), 90) },
+      { name: 'sys.color.on-primary-container',       value: d(ph, ps2, 10) },
+      // Secondary
+      { name: 'sys.color.secondary',                  value: secondaryHex },
+      { name: 'sys.color.on-secondary',               value: sl > 55 ? d(sh, ss2, 12) : '#FFFFFF' },
+      { name: 'sys.color.secondary-container',        value: d(sh, clamp(ss2*0.4, 12, 50), 90) },
+      { name: 'sys.color.on-secondary-container',     value: d(sh, ss2, 10) },
+      // Tertiary
+      { name: 'sys.color.tertiary',                   value: tertiaryHex || d(th, ts2, tl) },
+      { name: 'sys.color.on-tertiary',                value: tl > 55 ? d(th, ts2, 12) : '#FFFFFF' },
+      { name: 'sys.color.tertiary-container',         value: d(th, clamp(ts2*0.4, 15, 50), 90) },
+      { name: 'sys.color.on-tertiary-container',      value: d(th, ts2, 10) },
+      // Error (fixed)
+      { name: 'sys.color.error',                      value: '#B3261E' },
+      { name: 'sys.color.on-error',                   value: '#FFFFFF' },
+      { name: 'sys.color.error-container',            value: '#F9DEDC' },
+      { name: 'sys.color.on-error-container',         value: '#410E0B' },
+      // Primary Fixed
+      { name: 'sys.color.primary-fixed',              value: d(ph, clamp(ps2*0.4, 15, 55), 90) },
+      { name: 'sys.color.primary-fixed-dim',          value: d(ph, clamp(ps2*0.55, 20, 65), 80) },
+      { name: 'sys.color.on-primary-fixed',           value: d(ph, ps2, 10) },
+      { name: 'sys.color.on-primary-fixed-variant',   value: d(ph, ps2*0.8, 30) },
+      // Secondary Fixed
+      { name: 'sys.color.secondary-fixed',            value: d(sh, clamp(ss2*0.4, 12, 50), 90) },
+      { name: 'sys.color.secondary-fixed-dim',        value: d(sh, clamp(ss2*0.55, 15, 60), 80) },
+      { name: 'sys.color.on-secondary-fixed',         value: d(sh, ss2, 10) },
+      { name: 'sys.color.on-secondary-fixed-variant', value: d(sh, ss2*0.8, 28) },
+      // Tertiary Fixed
+      { name: 'sys.color.tertiary-fixed',             value: d(th, clamp(ts2*0.4, 15, 50), 90) },
+      { name: 'sys.color.tertiary-fixed-dim',         value: d(th, clamp(ts2*0.55, 18, 60), 80) },
+      { name: 'sys.color.on-tertiary-fixed',          value: d(th, ts2, 10) },
+      { name: 'sys.color.on-tertiary-fixed-variant',  value: d(th, ts2*0.8, 28) },
+      // Surface
+      { name: 'sys.color.surface-dim',                value: d(ph, 8, 86) },
+      { name: 'sys.color.surface',                    value: d(ph, 5, 99) },
+      { name: 'sys.color.surface-bright',             value: d(ph, 4, 98) },
+      { name: 'sys.color.inverse-surface',            value: d(ph, 10, 20) },
+      { name: 'sys.color.inverse-on-surface',         value: d(ph, 5, 94) },
+      { name: 'sys.color.inverse-primary',            value: d(ph, clamp(ps2*0.8, 30, 80), 78) },
+      // Surface Containers
+      { name: 'sys.color.surface-container-lowest',   value: '#FFFFFF' },
+      { name: 'sys.color.surface-container-low',      value: d(ph, 6, 96) },
+      { name: 'sys.color.surface-container',          value: d(ph, 8, 94) },
+      { name: 'sys.color.surface-container-high',     value: d(ph, 10, 91) },
+      { name: 'sys.color.surface-container-highest',  value: d(ph, 12, 88) },
+      // On Surface
+      { name: 'sys.color.on-surface',                 value: d(ph, 10, 11) },
+      { name: 'sys.color.on-surface-variant',         value: d(ph, 10, 29) },
+      { name: 'sys.color.outline',                    value: d(ph, 5, 47) },
+      { name: 'sys.color.outline-variant',            value: d(ph, 8, 80) },
+      // Utility
+      { name: 'sys.color.scrim',                      value: '#000000' },
+      { name: 'sys.color.shadow',                     value: '#000000' },
+    ];
+  }
+
+  // ── State ──────────────────────────────────────────────
+  let autoColorMode = false;
+
+  function makeColors(primaryHex, secondaryHex, tertiaryHex) {
+    return deriveColors(primaryHex, secondaryHex, tertiaryHex).map(c => ({ id: uid(), ...c }));
+  }
+
+  let colors = makeColors('#6750A4', '#625B71', '#7D5260');
+
+  let typography = [
+    { id: uid(), name: 'ref.typeface.heading', family: 'Geist',  size: '32px', weight: '400' },
+    { id: uid(), name: 'ref.typeface.body',    family: 'Inter',  size: '16px', weight: '100' },
+    { id: uid(), name: 'ref.typeface.caption', family: 'Roboto', size: '12px', weight: '300' },
+  ];
+
+  let spacing = [
+    { id: uid(), name: 'ref.spacing.xs', value: '4px'  },
+    { id: uid(), name: 'ref.spacing.sm', value: '8px'  },
+    { id: uid(), name: 'ref.spacing.md', value: '12px' },
+    { id: uid(), name: 'ref.spacing.lg', value: '16px' },
+    { id: uid(), name: 'ref.spacing.xl', value: '24px' },
+  ];
+
+  let activeTab     = 'css';
+  let activeLeftTab = 'colors';
+
+  function uid() { return Math.random().toString(36).slice(2, 9); }
+
+  // ── Auto color & Shuffle ───────────────────────────────
+  function activateAutoColor() {
+    autoColorMode = true;
+    renderLeftTabActions();
+    renderColors();
+  }
+
+  function cancelAutoColor() {
+    autoColorMode = false;
+    renderLeftTabActions();
+    renderColors();
+  }
+
+  function applyAutoDerive() {
+    const primary   = colors.find(c => c.name === 'sys.color.primary');
+    const secondary = colors.find(c => c.name === 'sys.color.secondary');
+    const tertiary  = colors.find(c => c.name === 'sys.color.tertiary');
+    if (!primary || !secondary) return;
+    const derived = deriveColors(primary.value, secondary.value, tertiary?.value);
+    derived.forEach(d => {
+      const existing = colors.find(c => c.name === d.name);
+      if (existing) existing.value = d.value;
+    });
+    renderColors();
+    renderOutput();
+  }
+
+  function shuffleColors() {
+    const hue  = Math.floor(Math.random() * 360);
+    const sat  = 45 + Math.floor(Math.random() * 35);
+    const lit  = 30 + Math.floor(Math.random() * 20);
+    const hue2 = (hue + 180 + Math.floor(Math.random() * 60) - 30 + 360) % 360;
+    const sat2 = 20 + Math.floor(Math.random() * 30);
+    const lit2 = 30 + Math.floor(Math.random() * 20);
+    const hue3 = (hue + 120 + Math.floor(Math.random() * 40) - 20 + 360) % 360;
+    const sat3 = 35 + Math.floor(Math.random() * 30);
+    const lit3 = 30 + Math.floor(Math.random() * 20);
+    const primaryHex   = hslToHex(hue,  sat,  lit);
+    const secondaryHex = hslToHex(hue2, sat2, lit2);
+    const tertiaryHex  = hslToHex(hue3, sat3, lit3);
+    const derived = deriveColors(primaryHex, secondaryHex, tertiaryHex);
+    derived.forEach(d => {
+      const existing = colors.find(c => c.name === d.name);
+      if (existing) existing.value = d.value;
+    });
+    renderColors();
+    renderOutput();
+  }
+
+  // ── Left tab ───────────────────────────────────────────
+  function setLeftTab(tab) {
+    activeLeftTab = tab;
+    // update tab buttons
+    document.querySelectorAll('#left-tabs .tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent.toLowerCase() === tab);
+    });
+    // show/hide panes
+    document.getElementById('colors-list').style.display     = tab === 'colors'     ? '' : 'none';
+    document.getElementById('typography-list').style.display = tab === 'typography' ? '' : 'none';
+    document.getElementById('spacing-list').style.display    = tab === 'spacing'    ? '' : 'none';
+    renderLeftTabActions();
+  }
+
+  function renderLeftTabActions() {
+    const el = document.getElementById('left-tab-actions');
+    if (activeLeftTab === 'colors') {
+      if (autoColorMode) {
+        el.innerHTML = `
+          <button class="btn-tool" style="color:#2563eb" onclick="cancelAutoColor()">Start Auto Color</button>
+          <button class="btn-cancel" onclick="cancelAutoColor()">Cancel</button>
+        `;
+      } else {
+        el.innerHTML = `
+          <span class="tip-wrap">
+            <button class="btn-tool" onclick="activateAutoColor()">Auto Color</button>
+            <i class="tip-icon">i</i>
+            <div class="tooltip">
+              <div class="tooltip-title">Auto color</div>
+              <div class="tooltip-desc">Change color-primary, secondary, and tertiary, then you get auto change the rest</div>
+            </div>
+          </span>
+          <span class="tip-wrap tip-below">
+            <button class="btn-tool" onclick="shuffleColors()">Shuffle</button>
+            <div class="tooltip">
+              <div class="tooltip-title">Shuffle color</div>
+              <div class="tooltip-desc">Surprise you with brand new set of colors</div>
+            </div>
+          </span>
+          <button class="btn-add" onclick="addColor()">ADD</button>
+        `;
+      }
+    } else if (activeLeftTab === 'typography') {
+      el.innerHTML = `<button class="btn-add" onclick="addTypography()">ADD</button>`;
+    } else if (activeLeftTab === 'spacing') {
+      el.innerHTML = `<button class="btn-add" onclick="addSpacing()">ADD</button>`;
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────
+  function render() {
+    renderColors();
+    renderTypography();
+    renderSpacing();
+    renderOutput();
+    setLeftTab(activeLeftTab);
+  }
+
+  function renderColors() {
+    const list = document.getElementById('colors-list');
+    const keyNames = ['sys.color.primary', 'sys.color.secondary', 'sys.color.tertiary'];
+
+    // In auto mode: pin the 3 key colors to the top, rest follow dimmed
+    const ordered = autoColorMode
+      ? [
+          ...keyNames.map(n => colors.find(c => c.name === n)).filter(Boolean),
+          ...colors.filter(c => !keyNames.includes(c.name)),
+        ]
+      : colors;
+
+    const makeRow = (c, isDimmed) => `
+      <div class="token-row${isDimmed ? ' dimmed' : ''}" id="row-${c.id}">
+        <div class="color-swatch" style="background:${c.value}">
+          <input type="color" value="${c.value}"
+            oninput="updateColor('${c.id}','value',this.value)"
+            onchange="updateColor('${c.id}','value',this.value)" />
+        </div>
+        <input class="token-name" value="${c.name}"
+          oninput="updateColor('${c.id}','name',this.value)" />
+        <div class="divider"></div>
+        <input class="token-value" value="${c.value}"
+          oninput="syncColorValue('${c.id}',this.value)" />
+        <button class="btn-remove" onclick="removeColor('${c.id}')">×</button>
+      </div>
+    `;
+
+    list.innerHTML = ordered.map(c =>
+      makeRow(c, autoColorMode && !keyNames.includes(c.name))
+    ).join('');
+  }
+
+  function renderTypography() {
+    const list = document.getElementById('typography-list');
+    list.innerHTML = typography.map(t => `
+      <div class="token-row" id="row-${t.id}">
+        <div class="type-preview">Ag</div>
+        <input class="token-name" value="${t.name}"
+          oninput="updateTypo('${t.id}','name',this.value)" />
+        <div class="divider"></div>
+        <input class="token-value font-family" value="${t.family}" placeholder="Family"
+          oninput="updateTypo('${t.id}','family',this.value)" />
+        <div class="divider"></div>
+        <input class="token-value font-size" value="${t.size}" placeholder="Size"
+          oninput="updateTypo('${t.id}','size',this.value)" />
+        <div class="divider"></div>
+        <input class="token-value font-weight" value="${t.weight}" placeholder="Weight"
+          oninput="updateTypo('${t.id}','weight',this.value)" />
+        <button class="btn-remove" onclick="removeTypo('${t.id}')">×</button>
+      </div>
+    `).join('');
+  }
+
+  function renderSpacing() {
+    const list = document.getElementById('spacing-list');
+    list.innerHTML = spacing.map(s => `
+      <div class="token-row" id="row-${s.id}">
+        <div class="space-preview"></div>
+        <input class="token-name" value="${s.name}"
+          oninput="updateSpacing('${s.id}','name',this.value)" />
+        <div class="divider"></div>
+        <input class="token-value" value="${s.value}"
+          oninput="updateSpacing('${s.id}','value',this.value)" />
+        <button class="btn-remove" onclick="removeSpacing('${s.id}')">×</button>
+      </div>
+    `).join('');
+  }
+
+  // ── Output generation ──────────────────────────────────
+  function renderOutput() {
+    document.getElementById('code-output').textContent = generateOutput(activeTab);
+  }
+
+  function generateOutput(tab) {
+    if (tab === 'css')   return generateCSS();
+    if (tab === 'json')  return generateJSON();
+    if (tab === 'figma') return generateFigma();
+  }
+
+  function toCSSName(name) { return name.replace(/\./g, '-'); }
+
+  function generateCSS() {
+    let lines = [':root {'];
+    colors.forEach(c => { if (c.name) lines.push(`  --${toCSSName(c.name)}: ${c.value};`); });
+    if (colors.length && (typography.length || spacing.length)) lines.push('');
+    typography.forEach(t => {
+      if (t.name) {
+        const p = toCSSName(t.name);
+        if (t.family) lines.push(`  --${p}-family: ${t.family};`);
+        if (t.size)   lines.push(`  --${p}-size: ${t.size};`);
+        if (t.weight) lines.push(`  --${p}-weight: ${t.weight};`);
+      }
+    });
+    if (typography.length && spacing.length) lines.push('');
+    spacing.forEach(s => { if (s.name) lines.push(`  --${toCSSName(s.name)}: ${s.value};`); });
+    lines.push('}');
+    return lines.join('\n');
+  }
+
+  function generateJSON() {
+    const obj = { tokens: {} };
+    colors.forEach(c => { if (c.name) obj.tokens[c.name] = { type: 'color', value: c.value }; });
+    typography.forEach(t => {
+      if (t.name) obj.tokens[t.name] = { type: 'typography', value: { fontFamily: t.family, fontSize: t.size, fontWeight: t.weight } };
+    });
+    spacing.forEach(s => { if (s.name) obj.tokens[s.name] = { type: 'spacing', value: s.value }; });
+    return JSON.stringify(obj, null, 2);
+  }
+
+  function generateFigma() {
+    const tokens = {};
+    colors.forEach(c => { if (c.name) tokens[c.name] = { $value: c.value, $type: 'color' }; });
+    typography.forEach(t => {
+      if (t.name) tokens[t.name] = { $value: { fontFamily: t.family, fontSize: t.size, fontWeight: t.weight }, $type: 'typography' };
+    });
+    spacing.forEach(s => { if (s.name) tokens[s.name] = { $value: s.value, $type: 'dimension' }; });
+    return JSON.stringify({ global: tokens }, null, 2);
+  }
+
+  // ── Mutations ──────────────────────────────────────────
+  function addColor() {
+    colors.push({ id: uid(), name: 'sys.color.new', value: '#000000' });
+    renderColors();
+    renderOutput();
+  }
+  function removeColor(id) {
+    colors = colors.filter(c => c.id !== id);
+    renderColors();
+    renderOutput();
+  }
+  function updateColor(id, key, val) {
+    const c = colors.find(c => c.id === id);
+    if (!c) return;
+    c[key] = val;
+    if (key === 'value') {
+      const row = document.getElementById('row-' + id);
+      if (row) {
+        row.querySelector('.color-swatch').style.background = val;
+        const hexInput = row.querySelector('.token-value');
+        if (hexInput !== document.activeElement) hexInput.value = val;
+      }
+      if (autoColorMode && (c.name === 'sys.color.primary' || c.name === 'sys.color.secondary' || c.name === 'sys.color.tertiary')) {
+        applyAutoDerive();
+        return;
+      }
+    }
+    renderOutput();
+  }
+  function syncColorValue(id, val) {
+    const c = colors.find(c => c.id === id);
+    if (!c) return;
+    c.value = val;
+    const row = document.getElementById('row-' + id);
+    if (row) {
+      row.querySelector('.color-swatch').style.background = val;
+      const picker = row.querySelector('input[type="color"]');
+      if (picker && /^#[0-9a-fA-F]{6}$/.test(val)) picker.value = val;
+    }
+    if (autoColorMode && (c.name === 'sys.color.primary' || c.name === 'sys.color.secondary' || c.name === 'sys.color.tertiary') && /^#[0-9a-fA-F]{6}$/.test(val)) {
+      applyAutoDerive();
+      return;
+    }
+    renderOutput();
+  }
+
+  function addTypography() {
+    typography.push({ id: uid(), name: 'ref.typeface.new', family: '', size: '16px', weight: '400' });
+    renderTypography(); renderOutput();
+  }
+  function removeTypo(id) {
+    typography = typography.filter(t => t.id !== id);
+    renderTypography(); renderOutput();
+  }
+  function updateTypo(id, key, val) {
+    const t = typography.find(t => t.id === id);
+    if (t) { t[key] = val; renderOutput(); }
+  }
+
+  function addSpacing() {
+    spacing.push({ id: uid(), name: 'ref.spacing.new', value: '0px' });
+    renderSpacing(); renderOutput();
+  }
+  function removeSpacing(id) {
+    spacing = spacing.filter(s => s.id !== id);
+    renderSpacing(); renderOutput();
+  }
+  function updateSpacing(id, key, val) {
+    const s = spacing.find(s => s.id === id);
+    if (s) { s[key] = val; renderOutput(); }
+  }
+
+  // ── Tabs ───────────────────────────────────────────────
+  function setTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      const match =
+        (tab === 'css'   && btn.textContent === 'CSS VAR') ||
+        (tab === 'json'  && btn.textContent === 'JSON')    ||
+        (tab === 'figma' && btn.textContent === 'FIGMA TOKENS');
+      btn.classList.toggle('active', match);
+    });
+    renderOutput();
+  }
+
+  // ── Actions ────────────────────────────────────────────
+  function copyToClipboard() {
+    navigator.clipboard.writeText(generateOutput(activeTab))
+      .then(() => showToast('Copied to clipboard!'));
+  }
+
+  function downloadFile() {
+    const filename = activeTab === 'css' ? 'tokens.css' : activeTab === 'json' ? 'tokens.json' : 'figma-tokens.json';
+    const blob = new Blob([generateOutput(activeTab)], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast(`Downloaded ${filename}`);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── Resize ─────────────────────────────────────────────
+  (function() {
+    const handle   = document.getElementById('resize-handle');
+    const left     = document.getElementById('panel-left');
+    const layout   = left.parentElement;
+    let dragging   = false;
+    let startX     = 0;
+    let startWidth = 0;
+
+    handle.addEventListener('mousedown', e => {
+      dragging   = true;
+      startX     = e.clientX;
+      startWidth = left.offsetWidth;
+      handle.classList.add('dragging');
+      document.body.style.cursor    = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const dx       = e.clientX - startX;
+      const total    = layout.offsetWidth - handle.offsetWidth;
+      const minW     = 280;
+      const maxW     = total - 280;
+      const newWidth = Math.max(minW, Math.min(maxW, startWidth + dx));
+      left.style.width = newWidth + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.cursor     = '';
+      document.body.style.userSelect = '';
+    });
+  })();
+
+  // ── Init ───────────────────────────────────────────────
+  render();
+</script>
+</body>
+</html>
