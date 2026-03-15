@@ -559,7 +559,7 @@
   </div>
 </main>
 
-<footer>© 2026 by Asyrof</footer>
+<footer>© 2026 by <a href="https://nurasyrof.com" target="_blank" rel="noopener" style="color:#aaa;text-decoration:none;">Asyrof</a></footer>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -705,11 +705,57 @@
   ];
 
   let spacing = [
-    { id: uid(), name: 'ref.spacing.xs', value: '4px'  },
-    { id: uid(), name: 'ref.spacing.sm', value: '8px'  },
-    { id: uid(), name: 'ref.spacing.md', value: '12px' },
-    { id: uid(), name: 'ref.spacing.lg', value: '16px' },
-    { id: uid(), name: 'ref.spacing.xl', value: '24px' },
+    // Fine steps: 0–64px every 4px
+    { id: uid(), name: 'ref.spacing.0',   value: '0px'   },
+    { id: uid(), name: 'ref.spacing.4',   value: '4px'   },
+    { id: uid(), name: 'ref.spacing.8',   value: '8px'   },
+    { id: uid(), name: 'ref.spacing.12',  value: '12px'  },
+    { id: uid(), name: 'ref.spacing.16',  value: '16px'  },
+    { id: uid(), name: 'ref.spacing.20',  value: '20px'  },
+    { id: uid(), name: 'ref.spacing.24',  value: '24px'  },
+    { id: uid(), name: 'ref.spacing.28',  value: '28px'  },
+    { id: uid(), name: 'ref.spacing.32',  value: '32px'  },
+    { id: uid(), name: 'ref.spacing.36',  value: '36px'  },
+    { id: uid(), name: 'ref.spacing.40',  value: '40px'  },
+    { id: uid(), name: 'ref.spacing.44',  value: '44px'  },
+    { id: uid(), name: 'ref.spacing.48',  value: '48px'  },
+    { id: uid(), name: 'ref.spacing.52',  value: '52px'  },
+    { id: uid(), name: 'ref.spacing.56',  value: '56px'  },
+    { id: uid(), name: 'ref.spacing.60',  value: '60px'  },
+    { id: uid(), name: 'ref.spacing.64',  value: '64px'  },
+    // Medium steps: 72–256px every 8–16px
+    { id: uid(), name: 'ref.spacing.72',  value: '72px'  },
+    { id: uid(), name: 'ref.spacing.80',  value: '80px'  },
+    { id: uid(), name: 'ref.spacing.88',  value: '88px'  },
+    { id: uid(), name: 'ref.spacing.96',  value: '96px'  },
+    { id: uid(), name: 'ref.spacing.104', value: '104px' },
+    { id: uid(), name: 'ref.spacing.112', value: '112px' },
+    { id: uid(), name: 'ref.spacing.120', value: '120px' },
+    { id: uid(), name: 'ref.spacing.128', value: '128px' },
+    { id: uid(), name: 'ref.spacing.144', value: '144px' },
+    { id: uid(), name: 'ref.spacing.160', value: '160px' },
+    { id: uid(), name: 'ref.spacing.176', value: '176px' },
+    { id: uid(), name: 'ref.spacing.192', value: '192px' },
+    { id: uid(), name: 'ref.spacing.208', value: '208px' },
+    { id: uid(), name: 'ref.spacing.224', value: '224px' },
+    { id: uid(), name: 'ref.spacing.240', value: '240px' },
+    { id: uid(), name: 'ref.spacing.256', value: '256px' },
+    // Large steps: 288–960px every 32–64px
+    { id: uid(), name: 'ref.spacing.288', value: '288px' },
+    { id: uid(), name: 'ref.spacing.320', value: '320px' },
+    { id: uid(), name: 'ref.spacing.352', value: '352px' },
+    { id: uid(), name: 'ref.spacing.384', value: '384px' },
+    { id: uid(), name: 'ref.spacing.416', value: '416px' },
+    { id: uid(), name: 'ref.spacing.448', value: '448px' },
+    { id: uid(), name: 'ref.spacing.480', value: '480px' },
+    { id: uid(), name: 'ref.spacing.512', value: '512px' },
+    { id: uid(), name: 'ref.spacing.576', value: '576px' },
+    { id: uid(), name: 'ref.spacing.640', value: '640px' },
+    { id: uid(), name: 'ref.spacing.704', value: '704px' },
+    { id: uid(), name: 'ref.spacing.768', value: '768px' },
+    { id: uid(), name: 'ref.spacing.832', value: '832px' },
+    { id: uid(), name: 'ref.spacing.896', value: '896px' },
+    { id: uid(), name: 'ref.spacing.960', value: '960px' },
   ];
 
   let activeTab     = 'css';
@@ -764,7 +810,7 @@
       ? googleFonts.filter(f => f.toLowerCase().includes(q)).slice(0, 30)
       : googleFonts.slice(0, 30);
     if (!matches.length) {
-      dropdown.innerHTML = '<div class="font-dropdown-empty">No fonts found</div>';
+      dropdown.innerHTML = `<div class="font-option" onmousedown="selectFont('${rowId}','${query.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')")>Add "${query}"</div>`;
       dropdown.classList.add('open');
       return;
     }
@@ -943,7 +989,7 @@
         <span class="token-label" title="${t.name}">${t.name.replace(/\./g, '-')}</span>
         <div class="divider"></div>
         <div class="font-search-wrap">
-          <input id="font-input-${t.id}" class="token-value font-family" value="${t.family}" placeholder="Family"
+          <input id="font-input-${t.id}" class="token-value font-family" value="${t.family}" placeholder="Google Font preferred"
             oninput="updateTypo('${t.id}','family',this.value);showFontDropdown('${t.id}',this.value);updateTypoPreview('${t.id}')"
             onfocus="showFontDropdown('${t.id}',this.value)"
             onblur="hideFontDropdown('${t.id}')" />
