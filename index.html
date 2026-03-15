@@ -45,7 +45,7 @@
       background: #fff;
       border: 1px solid #e5e5e5;
       border-radius: 12px;
-      width: calc(50% - 12px);
+      width: calc(70% - 12px);
       flex-shrink: 0;
       min-width: 280px;
       height: 600px;
@@ -336,12 +336,69 @@
       outline: none;
       padding: 2px 4px;
       border-radius: 4px;
-      min-width: 70px;
+      min-width: 50px;
     }
     .token-value:focus { background: #f5f5f5; }
-    .token-value.font-family { min-width: 70px; }
-    .token-value.font-size   { min-width: 50px; }
-    .token-value.font-weight { min-width: 45px; }
+    .token-value.font-family { min-width: 60px; }
+    .token-value.font-size   { min-width: 40px; }
+    .token-value.font-weight { min-width: 35px; }
+
+    /* Font search dropdown */
+    .font-search-wrap {
+      position: relative;
+      display: inline-flex;
+      flex: 1;
+      min-width: 0;
+    }
+    .font-search-wrap .token-value.font-family {
+      width: 100%;
+    }
+    .font-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 200;
+      min-width: 200px;
+      display: none;
+    }
+    .font-dropdown.open { display: block; }
+    .font-option {
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #f5f5f5;
+      color: #222;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .font-option:last-child { border-bottom: none; }
+    .font-option:hover, .font-option.selected { background: #f0f5ff; color: #2563eb; }
+    .font-dropdown-empty {
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .token-label {
+      font-size: 11.5px;
+      color: #888;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 120px;
+      flex: 2;
+      padding: 2px 4px;
+      cursor: text;
+      border-radius: 4px;
+    }
+    .token-label:hover { background: #f5f5f5; color: #444; }
 
     .divider { width: 1px; height: 14px; background: #e5e5e5; }
 
@@ -625,9 +682,26 @@
   let colors = makeColors('#6750A4', '#625B71', '#7D5260');
 
   let typography = [
-    { id: uid(), name: 'ref.typeface.heading', family: 'Geist',  size: '32px', weight: '400' },
-    { id: uid(), name: 'ref.typeface.body',    family: 'Inter',  size: '16px', weight: '100' },
-    { id: uid(), name: 'ref.typeface.caption', family: 'Roboto', size: '12px', weight: '300' },
+    // Display
+    { id: uid(), name: 'ref.typeface.display-large',   family: 'Inter', size: '57px', weight: '400' },
+    { id: uid(), name: 'ref.typeface.display-medium',  family: 'Inter', size: '45px', weight: '400' },
+    { id: uid(), name: 'ref.typeface.display-small',   family: 'Inter', size: '36px', weight: '400' },
+    // Headline
+    { id: uid(), name: 'ref.typeface.headline-large',  family: 'Inter', size: '32px', weight: '400' },
+    { id: uid(), name: 'ref.typeface.headline-medium', family: 'Inter', size: '28px', weight: '400' },
+    { id: uid(), name: 'ref.typeface.headline-small',  family: 'Inter', size: '24px', weight: '400' },
+    // Title
+    { id: uid(), name: 'ref.typeface.title-large',     family: 'Inter', size: '22px', weight: '500' },
+    { id: uid(), name: 'ref.typeface.title-medium',    family: 'Inter', size: '16px', weight: '500' },
+    { id: uid(), name: 'ref.typeface.title-small',     family: 'Inter', size: '14px', weight: '500' },
+    // Body
+    { id: uid(), name: 'ref.typeface.body-large',      family: 'Inter', size: '16px', weight: '400' },
+    { id: uid(), name: 'ref.typeface.body-medium',     family: 'Inter', size: '14px', weight: '400' },
+    { id: uid(), name: 'ref.typeface.body-small',      family: 'Inter', size: '12px', weight: '400' },
+    // Label
+    { id: uid(), name: 'ref.typeface.label-large',     family: 'Inter', size: '14px', weight: '500' },
+    { id: uid(), name: 'ref.typeface.label-medium',    family: 'Inter', size: '12px', weight: '500' },
+    { id: uid(), name: 'ref.typeface.label-small',     family: 'Inter', size: '11px', weight: '500' },
   ];
 
   let spacing = [
@@ -642,6 +716,78 @@
   let activeLeftTab = 'colors';
 
   function uid() { return Math.random().toString(36).slice(2, 9); }
+
+  // ── Google Fonts ──────────────────────────────────────
+  let googleFonts = [];
+
+  async function loadGoogleFonts() {
+    try {
+      const response = await fetch('https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyB8Ua6XIfe-gqbkE8P3XL4spd7xRI-Ghdg&sort=popularity');
+      const data = await response.json();
+      googleFonts = data.items.map(font => font.family);
+    } catch (error) {
+      console.warn('Failed to load Google Fonts:', error);
+      googleFonts = [
+        'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Nunito', 'Oswald',
+        'Raleway', 'Merriweather', 'Playfair Display', 'Ubuntu', 'Rubik', 'Noto Sans',
+        'PT Sans', 'Fira Sans', 'Source Sans Pro', 'Oxygen', 'Hind', 'Quicksand',
+        'Work Sans', 'Karla', 'Libre Franklin', 'Crimson Text', 'Space Mono', 'JetBrains Mono',
+        'IBM Plex Sans', 'IBM Plex Serif', 'IBM Plex Mono', 'Cairo', 'Mulish', 'Barlow',
+        'Heebo', 'Exo 2', 'Lexend Deca', 'Readex Pro', 'Manrope', 'Plus Jakarta Sans',
+        'Figtree', 'Instrument Sans', 'DM Sans', 'DM Serif Display', 'DM Mono', 'Sora',
+        'Epilogue', 'Anybody', 'Switzer'
+      ];
+    }
+  }
+
+  function loadFont(family) {
+    const id = 'gf-' + family.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+    if (!document.getElementById(id)) {
+      const link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}&display=swap`;
+      document.head.appendChild(link);
+    }
+  }
+
+  function showFontDropdown(rowId, query) {
+    const dropdown = document.getElementById('font-drop-' + rowId);
+    if (!dropdown) return;
+    const q = query.toLowerCase().trim();
+    const matches = q
+      ? googleFonts.filter(f => f.toLowerCase().includes(q)).slice(0, 30)
+      : googleFonts.slice(0, 30);
+    if (!matches.length) {
+      dropdown.innerHTML = '<div class="font-dropdown-empty">No fonts found</div>';
+      dropdown.classList.add('open');
+      return;
+    }
+    // Load preview fonts (first 15)
+    matches.slice(0, 15).forEach(loadFont);
+    dropdown.innerHTML = matches.map(f =>
+      `<div class="font-option" style="font-family:'${f.replace(/'/g, "\\'")}',sans-serif"
+        onmousedown="selectFont('${rowId}','${f.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">${f}</div>`
+    ).join('');
+    dropdown.classList.add('open');
+  }
+
+  function hideFontDropdown(rowId) {
+    setTimeout(() => {
+      const dropdown = document.getElementById('font-drop-' + rowId);
+      if (dropdown) dropdown.classList.remove('open');
+    }, 150);
+  }
+
+  function selectFont(rowId, family) {
+    const input = document.getElementById('font-input-' + rowId);
+    if (input) input.value = family;
+    updateTypo(rowId, 'family', family);
+    loadFont(family);
+    updateTypoPreview(rowId);
+    const dropdown = document.getElementById('font-drop-' + rowId);
+    if (dropdown) dropdown.classList.remove('open');
+  }
 
   // ── Auto color & Shuffle ───────────────────────────────
   function activateAutoColor() {
@@ -787,21 +933,35 @@
     const list = document.getElementById('typography-list');
     list.innerHTML = typography.map(t => `
       <div class="token-row" id="row-${t.id}">
-        <div class="type-preview">Ag</div>
-        <input class="token-name" value="${t.name}"
-          oninput="updateTypo('${t.id}','name',this.value)" />
+        <div class="type-preview" id="preview-${t.id}"
+          style="font-family:'${t.family}',sans-serif;font-weight:${t.weight}">Ag</div>
+        <span class="token-label" title="${t.name}">${t.name.replace(/\./g, '-')}</span>
         <div class="divider"></div>
-        <input class="token-value font-family" value="${t.family}" placeholder="Family"
-          oninput="updateTypo('${t.id}','family',this.value)" />
+        <div class="font-search-wrap">
+          <input id="font-input-${t.id}" class="token-value font-family" value="${t.family}" placeholder="Family"
+            oninput="updateTypo('${t.id}','family',this.value);showFontDropdown('${t.id}',this.value);updateTypoPreview('${t.id}')"
+            onfocus="showFontDropdown('${t.id}',this.value)"
+            onblur="hideFontDropdown('${t.id}')" />
+          <div id="font-drop-${t.id}" class="font-dropdown"></div>
+        </div>
         <div class="divider"></div>
         <input class="token-value font-size" value="${t.size}" placeholder="Size"
           oninput="updateTypo('${t.id}','size',this.value)" />
         <div class="divider"></div>
         <input class="token-value font-weight" value="${t.weight}" placeholder="Weight"
-          oninput="updateTypo('${t.id}','weight',this.value)" />
+          oninput="updateTypo('${t.id}','weight',this.value);updateTypoPreview('${t.id}')" />
         <button class="btn-remove" onclick="removeTypo('${t.id}')">×</button>
       </div>
     `).join('');
+    typography.forEach(t => { if (t.family) loadFont(t.family); });
+  }
+
+  function updateTypoPreview(id) {
+    const t = typography.find(t => t.id === id);
+    const preview = document.getElementById('preview-' + id);
+    if (!t || !preview) return;
+    preview.style.fontFamily = `'${t.family}', sans-serif`;
+    preview.style.fontWeight = t.weight;
   }
 
   function renderSpacing() {
@@ -1018,6 +1178,7 @@
   })();
 
   // ── Init ───────────────────────────────────────────────
+  loadGoogleFonts().then(() => { renderTypography(); });
   render();
 </script>
 </body>
