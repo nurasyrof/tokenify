@@ -252,6 +252,32 @@
       border-bottom-color: #1a1a1a;
     }
 
+    /* Skeleton loading */
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+    .skeleton-row {
+      height: 40px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      margin-bottom: 8px;
+    }
+    .skeleton-row:last-child { margin-bottom: 0; }
+
+    @keyframes loading-dots {
+      0%, 20%  { content: 'Applying'; }
+      40%      { content: 'Applying.'; }
+      60%      { content: 'Applying..'; }
+      80%, 100%{ content: 'Applying...'; }
+    }
+    .loading-label::after {
+      content: 'Applying';
+      animation: loading-dots 1.2s steps(1) infinite;
+    }
+
     /* TOKEN ROWS */
     .token-row {
       display: flex;
@@ -342,6 +368,30 @@
     .token-value.font-family { min-width: 60px; }
     .token-value.font-size   { min-width: 40px; }
     .token-value.font-weight { min-width: 35px; }
+
+    /* Unit-suffixed inputs (e.g. 32px) */
+    .unit-input-wrap {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 4px;
+      padding: 2px 4px 2px 4px;
+    }
+    .unit-input-wrap:focus-within { background: #f5f5f5; }
+    .unit-input-wrap .unit-num {
+      font-size: 13.5px;
+      color: #444;
+      background: none;
+      border: none;
+      outline: none;
+      padding: 0;
+      min-width: 10px;
+    }
+    .unit-input-wrap .unit-suffix {
+      font-size: 13.5px;
+      color: #aaa;
+      user-select: none;
+      pointer-events: none;
+    }
 
     /* Font search dropdown */
     .font-search-wrap {
@@ -841,10 +891,27 @@
   }
 
   // ── Auto color & Shuffle ───────────────────────────────
+  let autoColorLoading = false;
+
   function activateAutoColor() {
     autoColorMode = true;
     renderLeftTabActions();
     renderColors();
+  }
+
+  function startAutoColor() {
+    autoColorLoading = true;
+    renderLeftTabActions();
+    const list = document.getElementById('colors-list');
+    list.innerHTML = Array.from({ length: colors.length || 10 }, () =>
+      `<div class="skeleton-row"></div>`
+    ).join('');
+    setTimeout(() => {
+      autoColorLoading = false;
+      autoColorMode = false;
+      applyAutoDerive();
+      renderLeftTabActions();
+    }, 2000);
   }
 
   function cancelAutoColor() {
@@ -906,9 +973,11 @@
   function renderLeftTabActions() {
     const el = document.getElementById('left-tab-actions');
     if (activeLeftTab === 'colors') {
-      if (autoColorMode) {
+      if (autoColorLoading) {
+        el.innerHTML = `<span class="loading-label" style="font-size:12px;color:#999;font-weight:500"></span>`;
+      } else if (autoColorMode) {
         el.innerHTML = `
-          <button class="btn-tool" style="color:#2563eb" onclick="cancelAutoColor()">Start Auto Color</button>
+          <button class="btn-tool" style="color:#2563eb" onclick="startAutoColor()">Start Auto Color</button>
           <button class="btn-cancel" onclick="cancelAutoColor()">Cancel</button>
         `;
       } else {
@@ -921,7 +990,7 @@
               <div class="tooltip-desc">Change color-primary, secondary, and tertiary, then you get auto change the rest</div>
             </div>
           </span>
-          <span class="tip-wrap tip-below">
+          <span class="tip-wrap">
             <button class="btn-tool" onclick="shuffleColors()">Shuffle</button>
             <div class="tooltip">
               <div class="tooltip-title">Shuffle color</div>
@@ -980,6 +1049,27 @@
     ).join('');
   }
 
+  // Split a value string like "32px" → { num: "32", unit: "px" }
+  function splitUnit(val) {
+    const m = String(val).match(/^(-?[\d.]+)([a-z%]*)$/i);
+    return m ? { num: m[1], unit: m[2] } : { num: String(val), unit: '' };
+  }
+
+  // Returns HTML for a number+unit composite input, or plain input if no unit
+  function unitInputHtml(val, onchange, extraClass) {
+    const { num, unit } = splitUnit(val);
+    const cls = extraClass ? ` ${extraClass}` : '';
+    const w = `${Math.max(num.length, 1)}ch`;
+    if (!unit) {
+      return `<input class="token-value${cls}" value="${num}" oninput="${onchange.replace('§VAL§', 'this.value')}" />`;
+    }
+    return `<div class="unit-input-wrap${cls}">` +
+      `<input class="unit-num" type="text" inputmode="decimal" value="${num}" style="width:${w}"` +
+      ` oninput="this.style.width=Math.max(this.value.length,1)+'ch';${onchange.replace('§VAL§', `this.value+'${unit}'`)}" />` +
+      `<span class="unit-suffix">${unit}</span>` +
+      `</div>`;
+  }
+
   function renderTypography() {
     const list = document.getElementById('typography-list');
     list.innerHTML = typography.map(t => `
@@ -996,8 +1086,7 @@
           <div id="font-drop-${t.id}" class="font-dropdown"></div>
         </div>
         <div class="divider"></div>
-        <input class="token-value font-size" value="${t.size}" placeholder="Size"
-          oninput="updateTypo('${t.id}','size',this.value)" />
+        ${unitInputHtml(t.size, `updateTypo('${t.id}','size','§VAL§')`, 'font-size')}
         <div class="divider"></div>
         <input class="token-value font-weight" value="${t.weight}" placeholder="Weight"
           oninput="updateTypo('${t.id}','weight',this.value);updateTypoPreview('${t.id}')" />
@@ -1023,8 +1112,7 @@
         <input class="token-name" value="${s.name}"
           oninput="updateSpacing('${s.id}','name',this.value)" />
         <div class="divider"></div>
-        <input class="token-value" value="${s.value}"
-          oninput="updateSpacing('${s.id}','value',this.value)" />
+        ${unitInputHtml(s.value, `updateSpacing('${s.id}','value','§VAL§')`)}
         <button class="btn-remove" onclick="removeSpacing('${s.id}')">×</button>
       </div>
     `).join('');
