@@ -720,24 +720,29 @@
   // ── Google Fonts ──────────────────────────────────────
   let googleFonts = [];
 
-  async function loadGoogleFonts() {
-    try {
-      const response = await fetch('https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyB8Ua6XIfe-gqbkE8P3XL4spd7xRI-Ghdg&sort=popularity');
-      const data = await response.json();
-      googleFonts = data.items.map(font => font.family);
-    } catch (error) {
-      console.warn('Failed to load Google Fonts:', error);
-      googleFonts = [
-        'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Nunito', 'Oswald',
-        'Raleway', 'Merriweather', 'Playfair Display', 'Ubuntu', 'Rubik', 'Noto Sans',
-        'PT Sans', 'Fira Sans', 'Source Sans Pro', 'Oxygen', 'Hind', 'Quicksand',
-        'Work Sans', 'Karla', 'Libre Franklin', 'Crimson Text', 'Space Mono', 'JetBrains Mono',
-        'IBM Plex Sans', 'IBM Plex Serif', 'IBM Plex Mono', 'Cairo', 'Mulish', 'Barlow',
-        'Heebo', 'Exo 2', 'Lexend Deca', 'Readex Pro', 'Manrope', 'Plus Jakarta Sans',
-        'Figtree', 'Instrument Sans', 'DM Sans', 'DM Serif Display', 'DM Mono', 'Sora',
-        'Epilogue', 'Anybody', 'Switzer'
-      ];
-    }
+  function loadGoogleFonts() {
+    googleFonts = [
+      // Sans-serif
+      'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Nunito', 'Oswald',
+      'Raleway', 'Ubuntu', 'Rubik', 'Noto Sans', 'PT Sans', 'Fira Sans', 'Source Sans Pro',
+      'Oxygen', 'Hind', 'Quicksand', 'Work Sans', 'Karla', 'Libre Franklin', 'Mulish', 'Barlow',
+      'Heebo', 'Exo 2', 'Lexend Deca', 'Readex Pro', 'Manrope', 'Plus Jakarta Sans', 'Figtree',
+      'Instrument Sans', 'DM Sans', 'Sora', 'Epilogue', 'Anybody', 'Outfit', 'Nunito Sans',
+      'Albert Sans', 'Hanken Grotesk', 'Onest', 'Bricolage Grotesque', 'Geist',
+      // Serif
+      'Merriweather', 'Playfair Display', 'Crimson Text', 'IBM Plex Serif', 'DM Serif Display',
+      'DM Serif Text', 'Lora', 'PT Serif', 'Libre Baskerville', 'Cormorant Garamond',
+      'Bitter', 'Spectral', 'EB Garamond', 'Fraunces', 'Newsreader', 'Source Serif 4',
+      'Frank Ruhl Libre', 'Instrument Serif', 'Yeseva One',
+      // Monospace
+      'Space Mono', 'JetBrains Mono', 'IBM Plex Mono', 'DM Mono', 'Fira Code',
+      'Source Code Pro', 'Roboto Mono', 'Inconsolata', 'Courier Prime', 'Martian Mono',
+      'Geist Mono',
+      // Display
+      'Cairo', 'Exo', 'Nunito', 'Righteous', 'Titan One', 'Bungee', 'Bebas Neue',
+      'Anton', 'Black Han Sans', 'Russo One', 'Teko', 'Passion One', 'Squada One',
+    ];
+    return Promise.resolve();
   }
 
   function loadFont(family) {
